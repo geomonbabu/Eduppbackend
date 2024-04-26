@@ -19,6 +19,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
+
 router.post("/register", upload.single('profileimage'),async(req,res)=>{
     //let data = req.body //read values
     let{data} = {"data":req.body}
@@ -35,7 +36,8 @@ router.post("/register", upload.single('profileimage'),async(req,res)=>{
                     })
                 }
                 else{
-                const hashedPassword=await HashGenerator(password)
+                    console.log(1)
+                const hashedPassword=await HashGenerator(data.password)
                 data.password=hashedPassword
                 const profileimage = req.file.path; 
                 data.profileimage = profileimage
@@ -47,6 +49,7 @@ router.post("/register", upload.single('profileimage'),async(req,res)=>{
                 }}        
                 console.log(data) 
     })
+
 router.post("/signin",async(req,res)=>{
     let data=req.body
     let email = req.body.emailid
@@ -73,8 +76,7 @@ router.post("/signin",async(req,res)=>{
             res.json({
                 status:"success","userdata":input
             })
-        }
-        
+        }     
     }
     console.log(email)
     //console.log(pass)
@@ -88,21 +90,72 @@ router.post("/viewprofile",async(req,res)=>{
 })
 router.post("/updateprofile",async(req,res)=>{
     let data = req.body
+    let id= req.body._id
     console.log(data)
-    let output =await studmodel.updateMany(data)
-    res.json({
-        status:"success"
-})
+    let input = await studmodel.findOne({"_id":id})
+    if(!input){
+        return res.json({
+            status:"invalid user"
+        })
+    }
+    else {
+        console.log(input)
+        let dbPass=input.password
+        let orgPass=req.body.old_pass
+        let cpass= req.body.c_pass
+        let newpass=req.body.new_pass
+        console.log(dbPass)
+        console.log(orgPass)
+        if(orgPass || cpass || newpass!="" ){
+            console.log(1)
+        const match = await bcrypt.compare(orgPass,dbPass)
+        if(!match)
+        {
+            console.log(2)
+            return res.json({
+                status:"incorrect password"
+            })
+        }else if(newpass==cpass){
+            return res.json({
+                status:"password not match"
+            })
+        }
+        else {
+            console.log(3)
+            const hashedPassword=await HashGenerator(data.newpass)
+            data.password=hashedPassword
+            let output =await studmodel.updateOne({ _id: id }, { $set: data })
+            res.json({
+                status:"success"
+        })
+        }     
+    }else{
+        let output =await studmodel.updateOne({ _id: id }, { $set: data })
+            res.json({
+                status:"success"
+        })
+    }
+}
+    
 })
 router.post("/resetpassword",async(req,res)=>{
     let{data} = {"data":req.body}
+    let email = data.emailid
+    let input = await studmodel.findOne({"emailid": email})
+    if(!input){
+        return res.json({
+            status:"invalid email"
+        })
+    }
+    else {
     let password = data.password
     const hashedPassword=await HashGenerator(password)
     data.password=hashedPassword
-    let output = await studmodel.updateOne(data)
+    let output = await studmodel.updateOne(data._id)
                  res.json({
                  status:"success"
                 }
                 )
-})
+}})
+
 module.exports=router

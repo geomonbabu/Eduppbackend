@@ -2,6 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const mongoose = require("mongoose")
 const studrouter = require("./controllers/StudentRouter")
+const commentrouter = require("./controllers/Commentrouter")
 
 
 //aliasname
@@ -17,6 +18,7 @@ mongoose.connect("mongodb+srv://polu:fisat1234@atlascluster.7tns0g6.mongodb.net/
 
 //routing or api
 app.use("/api/eduapp",studrouter)
+app.use("/api/eduapp",commentrouter)
 app.use('/uploads', express.static('uploads'));
 
 
